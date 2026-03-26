@@ -7,6 +7,45 @@ Welcome to KadeDB development. This guide helps you build the core, run tests, a
 - CMake 3.21+
 - A C++17 compiler (GCC/Clang/MSVC)
 - Python (optional, for Sphinx docs)
+- CUDA Toolkit 11.0+ (optional, for GPU acceleration)
+
+## GPU Acceleration (Optional)
+
+KadeDB supports GPU acceleration for compute-intensive operations. The GPU implementation currently provides CPU fallback using multi-threading, with CUDA support available when enabled.
+
+### Building with GPU Support
+
+To enable GPU acceleration:
+
+```bash
+cmake -S . --preset debug -DKADEDB_ENABLE_GPU=ON
+cmake --build --preset debug -j
+```
+
+### GPU Requirements
+
+- **CUDA Toolkit**: 11.0 or higher for actual GPU acceleration
+- **GPU Hardware**: CUDA-capable GPU with compute capability 6.0+
+- **Fallback Mode**: If CUDA is not available, the system automatically uses optimized multi-threaded CPU implementations
+
+### GPU Features
+
+Currently supported GPU-accelerated operations:
+- Numeric predicate evaluation (filters on int64/double)
+- Parallel scan and filter operations
+- Time-series bucket aggregation (COUNT/SUM/MIN/MAX)
+
+### Benchmarking
+
+Test GPU vs CPU performance:
+
+```bash
+# Run comprehensive GPU vs CPU benchmarks
+./build/debug/bin/kadedb_gpu_vs_cpu_bench 1000000
+
+# Run basic CPU baseline benchmarks
+./build/debug/bin/kadedb_query_bench 200000 200000
+```
 
 ## Build the Core (via CMake Presets)
 

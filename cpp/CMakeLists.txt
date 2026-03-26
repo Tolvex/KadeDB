@@ -103,6 +103,14 @@ target_link_libraries(kadedb_query_bench PRIVATE KadeDB::kadedb_core)
 
 target_compile_features(kadedb_query_bench PRIVATE cxx_std_17)
 
+add_executable(kadedb_gpu_vs_cpu_bench
+  bench/gpu_vs_cpu_bench.cpp
+)
+
+target_link_libraries(kadedb_gpu_vs_cpu_bench PRIVATE KadeDB::kadedb_core)
+
+target_compile_features(kadedb_gpu_vs_cpu_bench PRIVATE cxx_std_17)
+
 # Examples
 add_executable(kadedb_inmemory_rel_example
   examples/inmemory_rel_example.cpp

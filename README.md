@@ -33,7 +33,7 @@ Optimized for high-performance computing (HPC) on servers and edge nodes, KadeDB
 
 ### Components
 
-- **KadeDB Core (C++)**: High-performance engine with GPU acceleration and distributed scalability for compute-intensive analytics and storage internals.
+- **KadeDB Core (C++)**: High-performance engine with GPU acceleration (CUDA support + CPU fallback) and distributed scalability for compute-intensive analytics and storage internals.
 - **KadeDB Services (Rust)**: Secure, async service layer (REST/gRPC), connectors, auth/RBAC, and orchestration built with Rust for memory safety and reliability.
 - **KadeDB-Lite (C)**: Minimal footprint client for IoT/wearables with RocksDB-based embedded storage and low-bandwidth syncing.
 - **C ABI Bindings**: Stable C interface (`bindings/c/`) for FFI integration with other languages (Python, Rust, etc.).
@@ -49,6 +49,8 @@ cd KadeDB
 
 # Configure & build (Debug preset)
 cmake -S . --preset debug
+# Optional: Enable GPU acceleration with CUDA
+cmake -S . --preset debug -DKADEDB_ENABLE_GPU=ON
 cmake --build --preset debug -j
 
 # Run tests
@@ -134,6 +136,16 @@ Explore examples:
 - `examples/cpp_example/` – standalone C++ core API example
 - `examples/c_example/` – C ABI example
 - `examples/lite_cli/` – interactive KadeDB-Lite CLI
+
+GPU benchmarking:
+
+```bash
+# Run comprehensive GPU vs CPU benchmarks
+./build/debug/bin/kadedb_gpu_vs_cpu_bench 1000000
+
+# Run basic CPU baseline benchmarks
+./build/debug/bin/kadedb_query_bench 200000 200000
+```
 
 Key tests:
 
