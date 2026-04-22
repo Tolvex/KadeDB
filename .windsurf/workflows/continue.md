@@ -1,3 +1,0 @@
-Let's continue work on those checklists in sequence.
-Please review our codebase to find the best place to implement them.
-Then tick off the implemented list when done.
