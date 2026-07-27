@@ -45,3 +45,18 @@ diagnostics/**
 
 # Tool caches
 .cache/
+
+# CMake local install prefix (debug-local-install preset)
+/install/
+
+# CTest output
+Testing/
+
+# Stray test binaries
+/test_simple_ffi
+
+# Claude Code harness session/state (local, not shared)
+.claude/state/
+.claude/sessions/
+.claude/memory/
+.claude/settings.local.json
