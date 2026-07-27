@@ -104,7 +104,7 @@ This file tracks discrepancies between the README claims and the current codebas
 
 #### 4. GPU Acceleration
 
-- [ ] **Evaluate GPU use cases**
+- [x] **Evaluate GPU use cases**
   - [x] Identify compute-intensive operations (aggregations, joins, scans)
     - [x] Relational full scan + predicate (`InMemoryRelationalStorage::select` + `evalPredicate`)
     - [x] Time-series range scan + predicate (`InMemoryTimeSeriesStorage::rangeQuery`)

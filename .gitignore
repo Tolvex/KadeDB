@@ -60,3 +60,6 @@ Testing/
 .claude/sessions/
 .claude/memory/
 .claude/settings.local.json
+
+# Claude Code harness generated snapshots
+/out/
