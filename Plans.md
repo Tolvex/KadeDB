@@ -13,8 +13,8 @@ Purpose: Deliver the "distributed scalability" capability the README claims but 
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 1.1-spike | [spike] Distributed architecture technical validation — evaluate sharding (hash vs range), replication (leader-follower vs multi-leader), consensus (Raft vs external coordinator e.g. etcd) | Validation report recorded in `docs/spec/00-project-spec.md` Open Decisions table with a chosen approach | - | cc:完了 [0911538] |
-| 1.2 | Design distributed architecture: finalize sharding strategy, replication model, consensus protocol [needs-spike] | `docs/spec/00-project-spec.md` Open Decisions all resolved | 1.1-spike | cc:TODO |
+| 1.1-spike | [spike] Distributed architecture technical validation — evaluate sharding (hash vs range), replication (leader-follower vs multi-leader), consensus (Raft vs external coordinator e.g. etcd) | Validation report recorded in `docs/spec/00-project-spec.md` Open Decisions table with a chosen approach | - | cc:done [0911538] |
+| 1.2 | Design distributed architecture: finalize sharding strategy, replication model, consensus protocol [needs-spike] | `docs/spec/00-project-spec.md` updated with a concrete WAL wire format, leader→follower replication RPC schema, and chosen etcd client crate/API (not just the Task 1.1-spike direction) | 1.1-spike | cc:TODO |
 | 1.3 | Implement cluster membership: node discovery/heartbeat mechanism, cluster configuration management | Nodes can join/leave a cluster; heartbeat failure is observable in tests | 1.2 | cc:TODO |
 | 1.4 | Implement distributed query execution: query routing to shards, distributed aggregation (map-reduce style), result merging from multiple nodes | Multi-node integration test executes a query across shards and returns correctly merged results | 1.3 | cc:TODO |
 | 1.5 | Implement data replication: write-ahead log replication, failover and leader election | Killing the leader node in a test triggers election and replica promotion | 1.3 | cc:TODO |

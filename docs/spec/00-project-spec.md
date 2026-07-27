@@ -39,16 +39,19 @@ existing code, tests, or docs. Currently scoped to the decisions needed for Plan
 
 - Multi-region / geo-replication (out of scope for the first distributed milestone).
 - Automatic online resharding (a static shard count is acceptable for the first milestone).
-- Multi-leader replication — every write still goes through a single per-shard leader.
-- Graph storage sharding/replication — graph storage remains single-node in the first milestone.
+- (Multi-leader replication and graph/document sharding are already excluded — see Core Rules
+  above; not restated here to avoid two sources of truth that can drift apart.)
 
 ## Open Decisions
 
-| Decision | Options | Chosen | Status |
-|----------|---------|--------|--------|
-| Sharding strategy | hash-based vs range-based | Range-based (relational/time-series only; document & graph unsharded) | Resolved — Task 1.1-spike |
-| Replication model | leader-follower vs multi-leader | Leader-follower per shard | Resolved — Task 1.1-spike |
-| Consensus protocol | Raft (self-implemented) vs external coordinator (e.g. etcd) | External coordinator (etcd) for membership/leader-election; WAL replication is still hand-rolled | Resolved — Task 1.1-spike |
+Task 1.1-spike recommends the approach below; **Task 1.2 still has to finalize the concrete
+design** (see its DoD in `Plans.md`) — the "Chosen" column is a direction, not a completed design.
+
+| Decision | Options | Chosen (Task 1.1-spike recommendation) |
+|----------|---------|-----------------------------------------|
+| Sharding strategy | hash-based vs range-based | Range-based (relational/time-series only; document & graph unsharded) |
+| Replication model | leader-follower vs multi-leader | Leader-follower per shard |
+| Consensus protocol | Raft (self-implemented) vs external coordinator (e.g. etcd) | External coordinator (etcd) for membership/leader-election; WAL replication is still hand-rolled |
 
 ## Validation Notes (Task 1.1-spike, 2026-07-27)
 
@@ -64,7 +67,7 @@ Findings are grounded in the current codebase, not generic distributed-systems a
   mature etcd client crates available.
 - **Storage is already single-writer.** `cpp/include/kadedb/storage.h` (`InMemoryRelationalStorage`,
   `InMemoryDocumentStorage`) and `cpp/src/core/timeseries_storage.cpp`/`graph_storage.cpp` all guard
-  every mutation with one `std::mutex` per store (`storage.h:315`, `:348`; `lock_guard<std::mutex>`
+  every mutation with one `std::mutex` per store (`storage.h:316`, `:348`; `lock_guard<std::mutex>`
   throughout `timeseries_storage.cpp`/`graph_storage.cpp`). Leader-follower is a direct extension of
   this: one leader still owns the mutex-protected store; followers replay a replicated log. Multi-leader
   would require conflict resolution (CRDTs/vector clocks) that doesn't exist anywhere in the code and
