@@ -61,8 +61,12 @@ files only) before committing.
 ## Build & Test (Rust services)
 
 The Rust workspace lives in `services/` with its own `Cargo.toml`/`Cargo.lock` (members: `api`, `auth`,
-`ffi`, `grpc`, `examples`). It depends on the C ABI (`kadedb_c`) via the `ffi` crate, so the native C++/C
-build must exist first (built via the `debug` CMake preset in CI).
+`cluster`, `ffi`, `grpc`, `examples`). It depends on the C ABI (`kadedb_c`) via the `ffi` crate, so the
+native C++/C build must exist first (built via the `debug` CMake preset in CI).
+
+`cluster` depends on `etcd-client`, whose build script shells out to a system `protoc` (no vendored
+fallback like `grpc`'s `build.rs` uses) — install `protobuf-compiler` (or set `PROTOC` to a protoc binary)
+before building/testing the workspace.
 
 ```bash
 # Run test suite
@@ -138,6 +142,10 @@ is excluded from core coverage reports.
   (`/query` requires `Permission::Read`, `/tables` requires `Permission::Write`) via
   `auth_middleware`/`middleware::from_fn_with_state`.
 - `grpc`: Tonic gRPC service defined by `services/proto/kadedb.proto`.
+- `cluster`: node discovery/heartbeat and cluster membership for distributed mode, backed by etcd
+  (`etcd-client`) per `docs/spec/00-project-spec.md` — each node registers itself under a lease it renews
+  periodically; a stopped heartbeat lets the lease expire so other nodes observe the failure. Leader
+  election and shard routing are separate, later tasks (Plans.md 1.4/1.5).
 - `examples`: a CLI client exercising the REST/gRPC services.
 
 Data flow for a query: client → `api` (REST) or `grpc` service → `auth` middleware checks JWT + permission →

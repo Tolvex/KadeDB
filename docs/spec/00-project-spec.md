@@ -234,6 +234,29 @@ pinned tonic 0.12 — no conflict today. This is a coupled-upgrade constraint, n
 reason: bumping tonic in `services/` in the future requires a matching `etcd-client` release (or a
 vendored patch) to land first.
 
+### Task 1.3 Design (2026-07-30)
+
+Cluster membership implementation, in the new `services/cluster` crate. Fills in the concrete
+details Task 1.1/1.2 left to later tasks; does not revisit the etcd-vs-self-implemented decision.
+
+- **Key schema**: each node PUTs its `NodeInfo { node_id, address }` (JSON-encoded — this is etcd
+  membership metadata, not WAL replication data, so it does not reuse `serialization.h`'s
+  `writeValue` framing from the Task 1.2 WAL design) under `/kadedb/cluster/nodes/<node_id>`,
+  bound to a lease (`PutOptions::with_lease`). `members()` lists the prefix; `watch()` watches it
+  and maps etcd `Put`/`Delete` events to `MembershipEvent::Joined`/`Left`.
+- **Liveness**: a background task calls `lease_keep_alive` roughly every TTL/3 (etcd's own
+  recommended cadence, so a couple of missed ticks don't immediately expire the node). Default TTL
+  is 5s, configurable via `MembershipConfig`.
+- **Join/leave semantics**: `leave()` is graceful — it stops the heartbeat and immediately
+  `lease_revoke`s, deleting the key right away. Crash/partition is simulated in tests (and occurs
+  for real on an actual crash) by the heartbeat simply stopping without a revoke: the key is only
+  removed once etcd expires the lease, which is what makes heartbeat failure "observable" per this
+  task's DoD — proven against a real etcd instance (`gcr.io/etcd-development/etcd`) in
+  `services/cluster/tests/membership.rs`'s `#[ignore]`-gated integration tests.
+- **Build prerequisite**: `etcd-client`'s build script shells out to `protoc` directly (unlike
+  `services/grpc`'s `build.rs`, which vendors it via `protoc-bin-vendored`). CI now installs
+  `protobuf-compiler`; local dev needs it too (or `PROTOC` pointed at a protoc binary).
+
 ## Links
 
 - `TODO.md` (#5 Distributed Scalability)

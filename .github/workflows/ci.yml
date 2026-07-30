@@ -68,6 +68,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build
 
+      - name: Install protoc (Ubuntu)
+        # kadedb-services-cluster depends on etcd-client, whose build script shells out to
+        # protoc directly (no vendored fallback like services/grpc's build.rs uses).
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Configure native (Debug)
         run: cmake -S . --preset debug
 
