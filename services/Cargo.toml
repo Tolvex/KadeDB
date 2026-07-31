@@ -6,5 +6,6 @@ members = [
   "examples",
   "ffi",
   "grpc",
+  "router",
 ]
 resolver = "2"

@@ -19,8 +19,20 @@ fn map_auth_error(err: AuthError) -> Status {
 use kadedb::query_service_server::{QueryService, QueryServiceServer};
 use kadedb::{QueryRequest, QueryRow};
 
+/// `QueryService` implementation. Not yet wired to `kadedb_ffi`/`kadedb_core` — by
+/// default it echoes the incoming query back as canned rows. `with_rows` overrides
+/// those canned rows, so callers (e.g. `kadedb-services-router`'s tests) can stand up
+/// several instances with distinguishable per-instance data to simulate shards.
 #[derive(Default)]
-pub struct QueryServiceImpl;
+pub struct QueryServiceImpl {
+    rows: Option<Vec<String>>,
+}
+
+impl QueryServiceImpl {
+    pub fn with_rows(rows: Vec<String>) -> Self {
+        Self { rows: Some(rows) }
+    }
+}
 
 #[tonic::async_trait]
 impl QueryService for QueryServiceImpl {
@@ -34,13 +46,15 @@ impl QueryService for QueryServiceImpl {
 
         let (tx, rx) = tokio::sync::mpsc::channel(8);
 
-        tokio::spawn(async move {
-            let rows = [
+        let rows = self.rows.clone().unwrap_or_else(|| {
+            vec![
                 serde_json::json!({"echo": query, "row": 1}).to_string(),
                 serde_json::json!({"echo": query, "row": 2}).to_string(),
                 serde_json::json!({"echo": query, "row": 3}).to_string(),
-            ];
+            ]
+        });
 
+        tokio::spawn(async move {
             for json in rows {
                 if tx.send(Ok(QueryRow { json })).await.is_err() {
                     break;
@@ -60,6 +74,16 @@ pub async fn serve(addr: std::net::SocketAddr, auth_cfg: AuthConfig) {
 }
 
 pub async fn serve_with_listener(listener: tokio::net::TcpListener, auth_cfg: AuthConfig) {
+    serve_with_listener_and_service(listener, auth_cfg, QueryServiceImpl::default()).await;
+}
+
+/// Same as [`serve_with_listener`], but with a caller-supplied `QueryServiceImpl`
+/// (e.g. one built via [`QueryServiceImpl::with_rows`]) instead of the default echo.
+pub async fn serve_with_listener_and_service(
+    listener: tokio::net::TcpListener,
+    auth_cfg: AuthConfig,
+    service: QueryServiceImpl,
+) {
     let interceptor = move |req: Request<()>| -> Result<Request<()>, Status> {
         if !auth_cfg.enabled {
             return Ok(req);
@@ -75,7 +99,7 @@ pub async fn serve_with_listener(listener: tokio::net::TcpListener, auth_cfg: Au
             .map_err(map_auth_error)
     };
 
-    let svc = QueryServiceServer::with_interceptor(QueryServiceImpl, interceptor);
+    let svc = QueryServiceServer::with_interceptor(service, interceptor);
 
     Server::builder()
         .add_service(svc)

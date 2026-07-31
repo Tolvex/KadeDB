@@ -257,6 +257,54 @@ details Task 1.1/1.2 left to later tasks; does not revisit the etcd-vs-self-impl
   `services/grpc`'s `build.rs`, which vendors it via `protoc-bin-vendored`). CI now installs
   `protobuf-compiler`; local dev needs it too (or `PROTOC` pointed at a protoc binary).
 
+### Task 1.4 Design (2026-07-31)
+
+Distributed query execution, in a new `services/router` crate. Scopes "query routing to shards,
+distributed aggregation (map-reduce style), result merging" (Plans.md Task 1.4 DoD) against what
+Task 1.2/1.3 actually built so far — not a restatement of later tasks' scope.
+
+- **Shard topology is static and single-node-per-shard for this milestone.** Task 1.5 ("failover
+  and leader election") is what introduces followers and dynamic leader promotion; Task 1.4 has no
+  dependency on that landing first, because with no replicas yet, "the leader of a shard" and "the
+  shard's one node" are the same thing. `ShardTopology`/`ShardInfo` in `services/router` are a
+  caller-supplied, static `{shard_id, range_start, range_end, address}` list — not read from etcd —
+  consistent with `services/cluster/src/lib.rs`'s own comment that shard routing is out of its
+  scope. A later task can source this topology from etcd once per-shard leader keys exist; that
+  swap is confined to how `ShardTopology` is constructed, not to `QueryRouter`/`merge_rows`.
+- **Routing narrows by range, but is a heuristic, not a KadeQL parse.** The KadeQL parser lives in
+  C++ (`cpp/include/kadedb/kadeql_parser.h`) with no Rust binding; re-implementing it in Rust just
+  to extract a `WHERE` bound is disproportionate to this task. `services/router` instead scans the
+  query text for a recognized bound on the topology's `shard_key_column` (`col >= N`, `col > N`,
+  `col <= N`, `col < N`, `col = N`, `col BETWEEN a AND b`, conjoined with `AND`) and prunes to
+  shards whose `[range_start, range_end)` overlaps the recognized bound. When no bound is
+  recognized (or the query predicate is more complex than this heuristic covers), routing falls
+  back to every shard — always correct, just not minimal. This mirrors the DoD's "query routing to
+  shards," while leaving precise cross-language predicate extraction as a follow-up if it turns out
+  to matter (e.g. a future C ABI "extract predicate bounds" helper) rather than solving it now.
+- **"Map-reduce style" aggregation is scoped to what KadeQL actually supports.** KadeQL's only
+  aggregate functions are `TIME_BUCKET`/`FIRST`/`LAST` (`cpp/src/core/query_executor.cpp:680-681`)
+  — there is no `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` to combine. `services/router` exposes a
+  `MergeStrategy` the caller selects for its own query shape: `Concat` (plain `SELECT`s — shard
+  rows appended in shard-id order) or `TimeBucketFirst`/`TimeBucketLast { bucket_key }` for
+  `TIME_BUCKET(...) ... FIRST(...)`/`LAST(...)` queries. `bucket_key` (the JSON field name to group
+  rows by) is caller-supplied rather than inferred from the row JSON, because JSON object field
+  order is not guaranteed by `serde_json` and the router has no independent way to know which field
+  is the bucket column.
+  - **Merge rule for `FIRST`/`LAST` exploits range-sharding, not per-row timestamps.** Because
+    shards own disjoint, ordered key ranges, a bucket that appears in more than one shard's result
+    (only possible at a shard boundary) has its true global `FIRST` in the *lowest*-`shard_id`
+    shard that produced it, and its true global `LAST` in the *highest*-`shard_id` shard that
+    produced it — no cross-shard timestamp comparison needed, since shard order already reflects
+    key/time order. Buckets present in only one shard pass through unchanged.
+- **`QueryRouter` talks to the existing `QueryService` gRPC contract, whatever is behind it.**
+  `services/grpc`'s `QueryServiceImpl::query` is currently a stub (canned/echoed rows, not wired to
+  `kadedb_ffi`) — a pre-existing gap from earlier scaffolding, not something Task 1.4 introduces or
+  is responsible for closing. The router is written against the tonic `QueryServiceClient`
+  interface; when a later task wires `QueryServiceImpl` to real `kadedb_ffi::Storage` execution,
+  routing and merging work unchanged. `QueryServiceImpl` gained a `with_rows` constructor (default
+  behavior unchanged) purely so its own crate's tests, and this task's multi-node integration test,
+  can give each simulated shard distinguishable canned data.
+
 ## Links
 
 - `TODO.md` (#5 Distributed Scalability)

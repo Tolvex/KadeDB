@@ -832,6 +832,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "kadedb-services-router"
+version = "0.1.0"
+dependencies = [
+ "kadedb-services-auth",
+ "kadedb-services-grpc",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tonic",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
