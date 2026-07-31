@@ -55,11 +55,8 @@ Testing/
 # Stray test binaries
 /test_simple_ffi
 
-# Claude Code harness session/state (local, not shared)
-.claude/state/
-.claude/sessions/
-.claude/memory/
-.claude/settings.local.json
+# Claude Code harness session/state (local, not shared) — any level in the tree
+**/.claude/
 
 # Claude Code harness generated snapshots
 /out/
