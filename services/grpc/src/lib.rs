@@ -84,6 +84,9 @@ pub async fn serve_with_listener_and_service(
     auth_cfg: AuthConfig,
     service: QueryServiceImpl,
 ) {
+    // tonic::Interceptor requires this exact `Result<Request<()>, Status>` signature,
+    // so the large `Status` error can't be boxed here.
+    #[allow(clippy::result_large_err)]
     let interceptor = move |req: Request<()>| -> Result<Request<()>, Status> {
         if !auth_cfg.enabled {
             return Ok(req);
