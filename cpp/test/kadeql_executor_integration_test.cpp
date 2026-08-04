@@ -14,7 +14,11 @@ using namespace kadedb::kadeql;
 int main() {
   // Enable GPU exec path (currently CPU-threaded fallback) for this test.
   // This should not change semantics.
+#ifdef _WIN32
+  (void)_putenv_s("KADEDB_ENABLE_GPU_EXEC", "1");
+#else
   (void)setenv("KADEDB_ENABLE_GPU_EXEC", "1", 1);
+#endif
 
   // Set up in-memory storage with a simple table
   InMemoryRelationalStorage storage;
