@@ -138,12 +138,12 @@ jobs:
             preset: macos-clang-release
             build_preset: macos-clang-release
             test_preset: macos-clang-release
-          - os: windows-latest
+          - os: windows-2022
             build_type: Debug
             preset: windows-vs2022
             build_preset: windows-vs2022-debug
             test_preset: windows-vs2022-debug
-          - os: windows-latest
+          - os: windows-2022
             build_type: Release
             preset: windows-vs2022
             build_preset: windows-vs2022-release
